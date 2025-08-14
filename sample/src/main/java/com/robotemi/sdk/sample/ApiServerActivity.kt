@@ -9,7 +9,7 @@ import com.robotemi.sdk.sample.databinding.ActivityApiServerBinding
 
 /**
  * Activity that displays when the API server is running.
- * Shows a talking face video that can be controlled via the API.
+ * Shows a full-screen talking face video that can be controlled via the API.
  */
 class ApiServerActivity : AppCompatActivity() {
 
@@ -36,17 +36,6 @@ class ApiServerActivity : AppCompatActivity() {
         // Get the API server instance from MainActivity
         MainActivity.tempApiServerInstance?.let { server ->
             setApiServer(server)
-        }
-        
-        // Setup back button
-        binding.btnBack.setOnClickListener {
-            finish()
-        }
-        
-        // Setup stop server button
-        binding.btnStopServer.setOnClickListener {
-            stopApiServer()
-            finish()
         }
         
         Log.d(TAG, "ApiServerActivity created")
@@ -81,16 +70,18 @@ class ApiServerActivity : AppCompatActivity() {
                 }
             }
             
-            // Set up prepared listener to show first frame
+            // Set up prepared listener to show first frame immediately
             talkingFaceVideoView.setOnPreparedListener { mediaPlayer ->
-                // Pause immediately to show first frame (not speaking state)
+                // Scale video to fill screen
                 mediaPlayer.setVideoScalingMode(android.media.MediaPlayer.VIDEO_SCALING_MODE_SCALE_TO_FIT_WITH_CROPPING)
+                // Start video then immediately pause to show first frame
+                talkingFaceVideoView.start()
                 talkingFaceVideoView.pause()
-                Log.d(TAG, "Video prepared and paused at first frame")
+                talkingFaceVideoView.seekTo(0)
+                Log.d(TAG, "Video prepared and showing first frame in stopped state")
             }
             
-            // Set initial state (not speaking - first frame)
-            setSpeakingState(false)
+            Log.d(TAG, "Video setup completed")
             
         } catch (e: Exception) {
             Log.e(TAG, "Error setting up talking face video", e)
@@ -110,13 +101,11 @@ class ApiServerActivity : AppCompatActivity() {
                     if (!talkingFaceVideoView.isPlaying) {
                         talkingFaceVideoView.start()
                     }
-                    binding.tvDebugInfo.text = "Animation: Speaking"
                     Log.d(TAG, "Started talking video")
                 } else {
                     // Pause video and seek to beginning (first frame)
                     talkingFaceVideoView.pause()
                     talkingFaceVideoView.seekTo(0)
-                    binding.tvDebugInfo.text = "Animation: Stopped"
                     Log.d(TAG, "Stopped talking video")
                 }
             } catch (e: Exception) {
@@ -132,10 +121,6 @@ class ApiServerActivity : AppCompatActivity() {
         this.apiServer = server
         // Register this activity with the server so it can control the animation
         server.setAnimationController(this)
-    }
-
-    private fun stopApiServer() {
-        apiServer?.stopServer()
     }
 
     override fun onDestroy() {
