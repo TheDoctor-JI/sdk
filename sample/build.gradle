@@ -65,5 +65,5 @@ dependencies {
     implementation 'com.google.code.gson:gson:2.9.0'
     
     // HTTP Server for REST API
-    implementation 'fi.iki.elonen:nanohttpd:2.3.1'
+    implementation 'org.nanohttpd:nanohttpd:2.3.1'
 }
