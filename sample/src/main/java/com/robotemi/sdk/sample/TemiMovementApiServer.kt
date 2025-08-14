@@ -9,10 +9,11 @@ import java.io.IOException
 
 /**
  * REST API Server for remote control of Temi robot movement.
- * Provides three endpoints:
+ * Provides four endpoints:
  * 1. POST /api/turn - Turn the robot by specified degrees
  * 2. POST /api/tilt - Tilt the robot head to specified angle
  * 3. POST /api/skidJoy - Control robot movement with linear/angular velocity
+ * 4. POST /api/toggle_speaking_state - Control talking face animation
  */
 class TemiMovementApiServer(port: Int = 7755) : NanoHTTPD(port) {
 
@@ -24,6 +25,7 @@ class TemiMovementApiServer(port: Int = 7755) : NanoHTTPD(port) {
 
     private val robot: Robot by lazy { Robot.getInstance() }
     private val gson = Gson()
+    private var animationController: ApiServerActivity? = null
 
     /**
      * Data classes for API request/response
@@ -43,6 +45,10 @@ class TemiMovementApiServer(port: Int = 7755) : NanoHTTPD(port) {
         val speedY: Float,
         val durationMs: Long = DEFAULT_SKID_DURATION_MS,
         val smart: Boolean = true
+    )
+
+    data class SpeakingStateRequest(
+        val is_speaking: Boolean
     )
 
     data class ApiResponse(
@@ -68,9 +74,10 @@ class TemiMovementApiServer(port: Int = 7755) : NanoHTTPD(port) {
                 uri == "/api/turn" && method == Method.POST -> handleTurnRequest(session)
                 uri == "/api/tilt" && method == Method.POST -> handleTiltRequest(session)
                 uri == "/api/skidJoy" && method == Method.POST -> handleSkidJoyRequest(session)
+                uri == "/api/toggle_speaking_state" && method == Method.POST -> handleSpeakingStateRequest(session)
                 uri == "/api/status" && method == Method.GET -> handleStatusRequest()
                 uri == "/" && method == Method.GET -> handleRootRequest()
-                else -> createErrorResponse(404, "Endpoint not found", "Available endpoints: POST /api/turn, POST /api/tilt, POST /api/skidJoy, GET /api/status")
+                else -> createErrorResponse(404, "Endpoint not found", "Available endpoints: POST /api/turn, POST /api/tilt, POST /api/skidJoy, POST /api/toggle_speaking_state, GET /api/status")
             }
         } catch (e: Exception) {
             Log.e(TAG, "Error handling request", e)
@@ -206,6 +213,36 @@ class TemiMovementApiServer(port: Int = 7755) : NanoHTTPD(port) {
     }
 
     /**
+     * Handle speaking state request
+     * Expected JSON: {"is_speaking": true}
+     */
+    private fun handleSpeakingStateRequest(session: IHTTPSession): Response {
+        return try {
+            val requestBody = getRequestBody(session)
+            val request = gson.fromJson(requestBody, SpeakingStateRequest::class.java)
+            
+            // Control the animation via the animation controller
+            animationController?.setSpeakingState(request.is_speaking)
+            
+            val response = ApiResponse(
+                success = true,
+                message = "Speaking state updated successfully",
+                data = mapOf(
+                    "is_speaking" to request.is_speaking
+                )
+            )
+            
+            Log.d(TAG, "Speaking state set to: ${request.is_speaking}")
+            createSuccessResponse(response)
+            
+        } catch (e: JsonSyntaxException) {
+            createErrorResponse(400, "Invalid JSON format", "Expected: {\"is_speaking\": true}")
+        } catch (e: Exception) {
+            createErrorResponse(500, "Error controlling animation", e.message)
+        }
+    }
+
+    /**
      * Handle status request - returns basic robot information
      */
     private fun handleStatusRequest(): Response {
@@ -294,6 +331,14 @@ class TemiMovementApiServer(port: Int = 7755) : NanoHTTPD(port) {
                 </div>
                 
                 <div class="endpoint">
+                    <h3><span class="method">POST</span> <span class="path">/api/toggle_speaking_state</span></h3>
+                    <p>Control the talking face animation state</p>
+                    <pre>{
+  "is_speaking": true   // true to start animation, false to stop
+}</pre>
+                </div>
+                
+                <div class="endpoint">
                     <h3><span class="method">GET</span> <span class="path">/api/status</span></h3>
                     <p>Get current robot status (position, battery, etc.)</p>
                 </div>
@@ -363,5 +408,13 @@ class TemiMovementApiServer(port: Int = 7755) : NanoHTTPD(port) {
     fun stopServer() {
         stop()
         Log.i(TAG, "Temi Movement API Server stopped")
+    }
+
+    /**
+     * Set the animation controller for controlling the talking face
+     */
+    fun setAnimationController(controller: ApiServerActivity) {
+        this.animationController = controller
+        Log.d(TAG, "Animation controller set")
     }
 }

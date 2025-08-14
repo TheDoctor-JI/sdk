@@ -2445,6 +2445,11 @@ class MainActivity : AppCompatActivity(), NlpListener, OnRobotReadyListener,
         private const val REQUEST_CODE_SEQUENCE_PLAY_WITHOUT_PLAYER = 7
         private const val REQUEST_CODE_GET_MAP_LIST = 8
         private const val REQUEST_CODE_GET_ALL_FLOORS = 9
+        private const val REQUEST_CODE_API_SERVER = 10
+        
+        // Temporary storage for API server instance
+        var tempApiServerInstance: TemiMovementApiServer? = null
+        
         private val PERMISSIONS_STORAGE = arrayOf(
             Manifest.permission.READ_EXTERNAL_STORAGE,
             Manifest.permission.WRITE_EXTERNAL_STORAGE
@@ -2670,7 +2675,16 @@ class MainActivity : AppCompatActivity(), NlpListener, OnRobotReadyListener,
                 printLog("  POST /api/turn - Turn robot by degrees")
                 printLog("  POST /api/tilt - Tilt robot head")
                 printLog("  POST /api/skidJoy - Control robot movement")
+                printLog("  POST /api/toggle_speaking_state - Control talking face")
                 printLog("  GET /api/status - Get robot status")
+                
+                // Store server instance temporarily for the activity
+                tempApiServerInstance = apiServer
+                
+                // Launch the API Server Activity
+                val intent = Intent(this, ApiServerActivity::class.java)
+                startActivityForResult(intent, REQUEST_CODE_API_SERVER)
+                
             } else {
                 binding.groupSettingsAndStatus.tvApiServerStatus.text = "API Server: Failed to start"
                 printLog("Failed to start REST API Server")
@@ -2680,6 +2694,16 @@ class MainActivity : AppCompatActivity(), NlpListener, OnRobotReadyListener,
             printLog("Error starting API Server: ${e.message}")
             binding.groupSettingsAndStatus.tvApiServerStatus.text = "API Server: Error"
             apiServer = null
+        }
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: android.content.Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        
+        if (requestCode == REQUEST_CODE_API_SERVER) {
+            // Clear the temporary server instance
+            tempApiServerInstance = null
+            Log.d("MainActivity", "ApiServerActivity returned")
         }
     }
 

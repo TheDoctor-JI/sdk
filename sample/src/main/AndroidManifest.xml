@@ -86,6 +86,11 @@
 
         <activity android:name=".SerialActivity" />
 
+        <activity 
+            android:name=".ApiServerActivity"
+            android:screenOrientation="fullSensor"
+            android:theme="@style/ApiServerTheme" />
+
         <receiver android:name=".BootCompleteReceiver"
             android:exported="true">
             <intent-filter>

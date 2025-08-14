@@ -7,3 +7,5 @@
 /captures
 .externalNativeBuild
 secrets.properties
+*.gif
+*.mp4
