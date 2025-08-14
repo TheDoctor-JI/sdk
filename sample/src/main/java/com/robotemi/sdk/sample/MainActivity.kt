@@ -113,6 +113,9 @@ class MainActivity : AppCompatActivity(), NlpListener, OnRobotReadyListener,
 
     private val assistantReceiver = AssistantChangeReceiver()
 
+    // REST API Server for remote movement control
+    private var apiServer: TemiMovementApiServer? = null
+
     private val telepresenceStatusChangedListener: OnTelepresenceStatusChangedListener by lazy {
         object : OnTelepresenceStatusChangedListener("") {
             override fun onTelepresenceStatusChanged(callState: CallState) {
@@ -268,6 +271,11 @@ class MainActivity : AppCompatActivity(), NlpListener, OnRobotReadyListener,
         }
 
         unregisterReceiver(assistantReceiver)
+        
+        // Stop API server if running
+        apiServer?.stopServer()
+        apiServer = null
+        
         super.onDestroy()
     }
 
@@ -480,6 +488,10 @@ class MainActivity : AppCompatActivity(), NlpListener, OnRobotReadyListener,
             }
         }
         groupSettingsAndStatus.apply {
+            // API Server Controls
+            btnStartApiServer.setOnClickListener { startApiServer() }
+            btnStopApiServer.setOnClickListener { stopApiServer() }
+            
             btnBatteryInfo.setOnClickListener { getBatteryData() }
             btnHideTopBar.setOnClickListener { hideTopBar() }
             btnHideTopBarCompletely.setOnClickListener { hideTopBar(true) }
@@ -2635,5 +2647,53 @@ class MainActivity : AppCompatActivity(), NlpListener, OnRobotReadyListener,
 
     override fun onButtonStatusChanged(hardButton: HardButton, status: HardButton.Status) {
         Log.d("onButtonStatusChanged", "hardButton: $hardButton, status: $status")
+    }
+
+    /**
+     * Start the REST API server for remote movement control
+     */
+    private fun startApiServer() {
+        if (apiServer != null) {
+            printLog("API Server is already running")
+            return
+        }
+
+        try {
+            apiServer = TemiMovementApiServer(7755)
+            val started = apiServer!!.startServer()
+            
+            if (started) {
+                binding.groupSettingsAndStatus.tvApiServerStatus.text = "API Server: Running on port 7755"
+                printLog("REST API Server started successfully on port 7755")
+                printLog("API Documentation: http://ROBOT_IP:7755/")
+                printLog("Available endpoints:")
+                printLog("  POST /api/turn - Turn robot by degrees")
+                printLog("  POST /api/tilt - Tilt robot head")
+                printLog("  POST /api/skidJoy - Control robot movement")
+                printLog("  GET /api/status - Get robot status")
+            } else {
+                binding.groupSettingsAndStatus.tvApiServerStatus.text = "API Server: Failed to start"
+                printLog("Failed to start REST API Server")
+                apiServer = null
+            }
+        } catch (e: Exception) {
+            printLog("Error starting API Server: ${e.message}")
+            binding.groupSettingsAndStatus.tvApiServerStatus.text = "API Server: Error"
+            apiServer = null
+        }
+    }
+
+    /**
+     * Stop the REST API server
+     */
+    private fun stopApiServer() {
+        apiServer?.let {
+            it.stopServer()
+            apiServer = null
+            binding.groupSettingsAndStatus.tvApiServerStatus.text = "API Server: Stopped"
+            printLog("REST API Server stopped")
+        } ?: run {
+            printLog("API Server is not running")
+        }
     }
 }

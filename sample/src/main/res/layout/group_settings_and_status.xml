@@ -6,6 +6,38 @@
     android:gravity="center_horizontal"
     android:orientation="vertical">
 
+    <!-- API Server Controls -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="REST API Server"
+        android:textColor="@color/colorWhite"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:layout_marginTop="10dp"
+        android:layout_marginBottom="5dp" />
+
+    <Button
+        android:id="@+id/btnStartApiServer"
+        style="@style/ButtonCommon"
+        android:text="Start API Server (Port 7755)" />
+
+    <Button
+        android:id="@+id/btnStopApiServer"
+        style="@style/ButtonCommon"
+        android:text="Stop API Server" />
+
+    <TextView
+        android:id="@+id/tvApiServerStatus"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="API Server: Stopped"
+        android:textColor="@color/colorWhite"
+        android:textSize="14sp"
+        android:layout_marginBottom="20dp" />
+
+    <!-- Existing Controls -->
+
     <Button
         android:id="@+id/btnIsBackTOFEnabled"
         style="@style/ButtonCommon"
